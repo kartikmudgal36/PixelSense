@@ -1,0 +1,69 @@
+#define F_CPU 1000000UL
+#include<stdio.h>
+#include <avr/io.h>
+#include <util/delay.h>
+void LCD_command (char cmd)// command ke bare m likhre h ( char cmd is varialbe ) and LCD_command is function name. 
+{
+    PORTD=cmd;//giving command in port d 
+    PORTB&=~0X01;//RS ko low kar rhe h 
+    PORTB&=~0X02;//RW ko low kar rhe h
+    PORTB|=0X04;//EN high 
+    _delay_ms(5);//delay dere h 
+    PORTB&=~0X04;
+    _delay_ms(5);//EN low 
+}
+void LCD_data(char data ) //data ko input dene ke liye 
+{
+    PORTD=data;
+    PORTB|=0X01;
+    PORTB&=~0X02;//& is for low 
+    PORTB|=0X04;
+    _delay_ms(5);
+    PORTB&=~0X04;
+    _delay_ms(5);
+}
+void LCD_init()// initialize kar rhe h 
+{
+    LCD_command(0X01);//lcd all clear
+    LCD_command(0X02);//incriment on right by 1
+    LCD_command(0X38);//
+    LCD_command(0X06);
+    LCD_command(0X0C);
+}
+void ADC_init ()
+{
+    ADMUX =(1<<REFS0);
+    ADCSRA =(1<<ADEN)|(1<<ADPS0)|(1<<ADPS1);
+}
+uint16_t ADC_read(uint8_t channel)
+{
+    ADCSRA|=(1<<ADSC);
+    while((ADCSRA&(1<<ADIF))==0);
+    uint16_t data =ADC;
+    return data;
+}
+void LCD_string(const char *ptr)
+{
+    while(*ptr!='\0')
+    {
+        LCD_data(*ptr++);
+    }
+}
+int main()
+{
+    DDRD=0XFF;
+    DDRB=0X07;
+    char arr[16]={};
+    LCD_init();
+    ADC_init();
+    while(1)
+    {
+        LCD_command(0X80);
+        uint16_t ADC_value=ADC_read(0);
+        sprintf(arr,"%d",ADC_value);
+        LCD_string("ADC value :");
+        LCD_string(arr);
+        
+    }
+}
+
